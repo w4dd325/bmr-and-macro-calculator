@@ -5,79 +5,288 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BMR & Macro Calculator</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>BMR & Macro Calculator</h1>
-            <button type="button" id="darkModeToggle" class="dark-mode-toggle">🌙</button>
+            <div class="header-controls">
+                <button type="button" id="clearData" class="btn-small" title="Clear all saved data">🗑️</button>
+                <button type="button" id="exportData" class="btn-small" title="Export profile as backup">💾</button>
+                <button type="button" id="importData" class="btn-small" title="Import profile from file">📥</button>
+                <input type="file" id="fileInput" accept=".json" class="hidden">
+                <button type="button" id="darkModeToggle" class="dark-mode-toggle">🌙</button>
+            </div>
         </div>
-        <form id="bmrForm">
+
+        <!-- BMR Calculator Section -->
+        <div class="tracker-section">
+            <h2>📊 Personal Information</h2>
+            <form id="bmrForm">
+                <div class="form-section">
+                    <h3>Basic Details</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sex">Sex:</label>
+                            <select id="sex" name="sex" required>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="age">Age:</label>
+                            <input type="number" id="age" name="age" min="1" max="120" required placeholder="e.g., 30">
+                            <small>years</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Body Measurements</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="weight">Weight:</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="weight" name="weight" min="1" max="999" step="any" required placeholder="e.g., 70">
+                                <select id="weightUnit" name="weightUnit">
+                                    <option value="kg">kg</option>
+                                    <option value="lbs">lbs</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="height">Height:</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="height" name="height" min="1" max="999" step="any" required placeholder="e.g., 175">
+                                <select id="heightUnit" name="heightUnit">
+                                    <option value="cm">cm</option>
+                                    <option value="in">inches</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Lifestyle & Goals</h3>
+                    <div class="form-group">
+                        <label for="activity">Activity Level:</label>
+                        <select id="activity" name="activity" required>
+                            <option value="">Choose your activity level...</option>
+                            <option value="1.2">🛋️ Sedentary (little to no exercise)</option>
+                            <option value="1.375">🚶 Lightly active (1–3 days/week)</option>
+                            <option value="1.55">🏃 Moderately active (3–5 days/week)</option>
+                            <option value="1.725">💪 Very active (6–7 days/week)</option>
+                            <option value="1.9">🏋️ Extra active (intense daily training)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="deficit">Calorie Goal:</label>
+                        <select id="deficit" name="deficit" required>
+                            <option value="">Choose your goal...</option>
+                            <option value="0">🎯 Maintenance (no change)</option>
+                            <option value="250">📉 Mild deficit (-250 cal/day, ~0.5 lbs/week)</option>
+                            <option value="500">📊 Moderate deficit (-500 cal/day, ~1 lb/week)</option>
+                            <option value="750">📈 Aggressive deficit (-750 cal/day, ~1.5 lbs/week)</option>
+                            <option value="1000">⚡ Very aggressive (-1000 cal/day, ~2 lbs/week)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary btn-large">🚀 Calculate My BMR & Set Macro Targets</button>
+            </form>
+            
+            <div id="bmrResults" class="bmr-results"></div>
+        </div>
+
+        <!-- Target Macros Section -->
+        <div class="tracker-section hidden" id="macroSection">
+            <h2>Target Macros (Auto-calculated)</h2>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="sex">Sex:</label>
-                    <select id="sex" name="sex" required>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                    </select>
+                    <label for="targetProtein">Protein (g):</label>
+                    <input type="number" id="targetProtein" name="targetProtein" min="0" max="999" step="any" readonly>
+                    <small>Auto-calculated: 2g per kg body weight</small>
                 </div>
                 <div class="form-group">
-                    <label for="age">Age (years):</label>
-                    <input type="number" id="age" name="age" min="0" required>
+                    <label for="targetFats">Fats (g):</label>
+                    <input type="number" id="targetFats" name="targetFats" min="0" max="999" step="any" readonly>
+                    <small>Auto-calculated: 25% of total calories</small>
+                </div>
+                <div class="form-group">
+                    <label for="targetCarbs">Carbs (g):</label>
+                    <input type="number" id="targetCarbs" name="targetCarbs" min="0" max="999" step="any" readonly>
+                    <small>Auto-calculated: Remaining calories</small>
                 </div>
             </div>
+            <button type="button" id="editTargets" class="btn-secondary">✏️ Edit Targets Manually</button>
+            <button type="button" id="confirmTargets" class="btn-primary hidden">Confirm Targets</button>
+        </div>
 
-            <div class="form-row">
-                <div class="form-group equal-width">
-                    <label for="weight">Weight:</label>
-                    <input type="number" id="weight" name="weight" min="0" step="any" required>
+        <!-- Food Tracker Section -->
+        <div class="tracker-section hidden" id="foodSection">
+            <h2>Daily Food Intake</h2>
+            
+            <!-- Breakfast Section -->
+            <div class="meal-section">
+                <h3>🌅 Breakfast</h3>
+                <div class="food-table">
+                    <div class="food-header">
+                        <div class="food-col">Food Name</div>
+                        <div class="food-col">Protein (g)</div>
+                        <div class="food-col">Fats (g)</div>
+                        <div class="food-col">Carbs (g)</div>
+                        <div class="food-col">Action</div>
+                    </div>
+                    <div id="breakfastContainer" class="meal-container">
+                        <div class="food-item">
+                            <div class="food-row">
+                                <div class="food-col">
+                                    <input type="text" class="food-name" placeholder="e.g., Oatmeal">
+                                </div>
+                                <div class="food-col">
+                                    <input type="number" class="protein-input breakfast-protein" min="0" max="999" step="any">
+                                </div>
+                                <div class="food-col">
+                                    <input type="number" class="fats-input breakfast-fats" min="0" max="999" step="any">
+                                </div>
+                                <div class="food-col">
+                                    <input type="number" class="carbs-input breakfast-carbs" min="0" max="999" step="any">
+                                </div>
+                                <div class="food-col">
+                                    <button type="button" class="remove-food-btn" onclick="removeFoodItem(this)" title="Remove this food item">×</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group equal-width">
-                    <label>&nbsp;</label>
-                    <select id="weightUnit" name="weightUnit">
-                        <option value="kg">kg</option>
-                        <option value="lbs">lbs</option>
-                    </select>
-                </div>
-                <div class="form-group equal-width">
-                    <label for="height">Height:</label>
-                    <input type="number" id="height" name="height" min="0" step="any" required>
-                </div>
-                <div class="form-group equal-width">
-                    <label>&nbsp;</label>
-                    <select id="heightUnit" name="heightUnit">
-                        <option value="cm">cm</option>
-                        <option value="in">inches</option>
-                    </select>
-                </div>
+                <button type="button" class="add-meal-item" data-meal="breakfast">+ Add Breakfast Item</button>
             </div>
 
-            <div class="form-group">
-                <label for="activity">Activity Level:</label>
-                <select id="activity" name="activity" required>
-                    <option value="1.2">Sedentary (little to no exercise)</option>
-                    <option value="1.375">Lightly active (1–3 days/week)</option>
-                    <option value="1.55">Moderately active (3–5 days/week)</option>
-                    <option value="1.725">Very active (6–7 days/week)</option>
-                    <option value="1.9">Extra active (twice daily, intense training)</option>
-                </select>
+            <!-- Lunch Section -->
+            <div class="meal-section">
+                <h3>☀️ Lunch</h3>
+                <div class="food-table">
+                    <div class="food-header">
+                        <div class="food-col">Food Name</div>
+                        <div class="food-col">Protein (g)</div>
+                        <div class="food-col">Fats (g)</div>
+                        <div class="food-col">Carbs (g)</div>
+                        <div class="food-col">Action</div>
+                    </div>
+                    <div id="lunchContainer" class="meal-container">
+                        <div class="food-item">
+                            <div class="food-row">
+                                <div class="food-col">
+                                    <input type="text" class="food-name" placeholder="e.g., Chicken salad">
+                                </div>
+                                <div class="food-col">
+                                    <input type="number" class="protein-input lunch-protein" min="0" max="999" step="any">
+                                </div>
+                                <div class="food-col">
+                                    <input type="number" class="fats-input lunch-fats" min="0" max="999" step="any">
+                                </div>
+                                <div class="food-col">
+                                    <input type="number" class="carbs-input lunch-carbs" min="0" max="999" step="any">
+                                </div>
+                                <div class="food-col">
+                                    <button type="button" class="remove-food-btn" onclick="removeFoodItem(this)" title="Remove this food item">×</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="add-meal-item" data-meal="lunch">+ Add Lunch Item</button>
             </div>
 
-            <div class="form-group">
-                <label for="deficit">Calorie Deficit:</label>
-                <select id="deficit" name="deficit" required>
-                    <option value="0">None (maintenance)</option>
-                    <option value="250">Mild (-250 cal/day)</option>
-                    <option value="500">Moderate (-500 cal/day)</option>
-                    <option value="750">Aggressive (-750 cal/day)</option>
-                    <option value="1000">Very Aggressive (-1000 cal/day)</option>
-                </select>
+            <!-- Dinner Section -->
+            <div class="meal-section">
+                <h3>🌙 Dinner</h3>
+                <div class="food-table">
+                    <div class="food-header">
+                        <div class="food-col">Food Name</div>
+                        <div class="food-col">Protein (g)</div>
+                        <div class="food-col">Fats (g)</div>
+                        <div class="food-col">Carbs (g)</div>
+                        <div class="food-col">Action</div>
+                    </div>
+                    <div id="dinnerContainer" class="meal-container">
+                        <div class="food-item">
+                            <div class="food-row">
+                                <div class="food-col">
+                                    <input type="text" class="food-name" placeholder="e.g., Grilled salmon">
+                                </div>
+                                <div class="food-col">
+                                    <input type="number" class="protein-input dinner-protein" min="0" max="999" step="any">
+                                </div>
+                                <div class="food-col">
+                                    <input type="number" class="fats-input dinner-fats" min="0" max="999" step="any">
+                                </div>
+                                <div class="food-col">
+                                    <input type="number" class="carbs-input dinner-carbs" min="0" max="999" step="any">
+                                </div>
+                                <div class="food-col">
+                                    <button type="button" class="remove-food-btn" onclick="removeFoodItem(this)" title="Remove this food item">×</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="add-meal-item" data-meal="dinner">+ Add Dinner Item</button>
             </div>
 
-            <button type="submit">Calculate</button>
-        </form>
-        <div id="results"></div>
+            <!-- Snacks Section -->
+            <div class="meal-section">
+                <h3>🍿 Snacks</h3>
+                <div class="food-table">
+                    <div class="food-header">
+                        <div class="food-col">Food Name</div>
+                        <div class="food-col">Protein (g)</div>
+                        <div class="food-col">Fats (g)</div>
+                        <div class="food-col">Carbs (g)</div>
+                        <div class="food-col">Action</div>
+                    </div>
+                    <div id="snacksContainer" class="meal-container">
+                        <div class="food-item">
+                            <div class="food-row">
+                                <div class="food-col">
+                                    <input type="text" class="food-name" placeholder="e.g., Greek yogurt">
+                                </div>
+                                <div class="food-col">
+                                    <input type="number" class="protein-input snacks-protein" min="0" max="999" step="any">
+                                </div>
+                                <div class="food-col">
+                                    <input type="number" class="fats-input snacks-fats" min="0" max="999" step="any">
+                                </div>
+                                <div class="food-col">
+                                    <input type="number" class="carbs-input snacks-carbs" min="0" max="999" step="any">
+                                </div>
+                                <div class="food-col">
+                                    <button type="button" class="remove-food-btn" onclick="removeFoodItem(this)" title="Remove this food item">×</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="add-meal-item" data-meal="snacks">+ Add Snack Item</button>
+            </div>
+
+            <div class="meal-actions">
+                <button type="button" id="calculateMacros" class="btn-primary">Update Chart</button>
+                <button type="button" id="resetFood" class="btn-secondary">🗑️ Clear All Food</button>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section hidden" id="resultsSection">
+            <div id="macroSummary" class="macro-summary"></div>
+            <div class="chart-container">
+                <canvas id="macroChart"></canvas>
+            </div>
+        </div>
     </div>
-    <script src="script.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
